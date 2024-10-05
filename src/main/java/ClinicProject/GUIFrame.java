@@ -31,6 +31,9 @@ import javax.swing.event.DocumentListener;
 import javax.swing.table.DefaultTableModel;
 import javax.swing.table.TableRowSorter;
 
+/*
+ * A GUI frame that connects that connects to the database and displays the data.
+ */
 public class GUIFrame {
 
 	// Declare widgets
@@ -44,6 +47,10 @@ public class GUIFrame {
 	// Declare an ArrayList to store all the table name.
 	private static ArrayList<String> tables;
 
+
+	/**
+	 * Presents a login form, then attempts to connect to the database and display the data in a table.
+	 */
 	public static void start() {
 		// Initialize the login form.
 		loginForm = new JPanel();
@@ -140,7 +147,7 @@ public class GUIFrame {
 		buttonPanel.add(closeButton);
 
 		frame.add(buttonPanel, BorderLayout.SOUTH);
-		
+
 		// Finally, display the frame.
 		frame.setVisible(true);
 
@@ -189,9 +196,12 @@ public class GUIFrame {
 				System.exit(0);
 			}
 		});
-
 	}
 
+
+	/**
+	 * Executes when input is provided to the search bar, Filters the table to rows that match the search term.
+	 */
 	private static void searchTable() {
 		DefaultTableModel ob=(DefaultTableModel) table.getModel();
 		TableRowSorter<DefaultTableModel> obj = new TableRowSorter<DefaultTableModel>(ob);
@@ -199,60 +209,10 @@ public class GUIFrame {
 		obj.setRowFilter(RowFilter.regexFilter(searchBar.getText()));		// Filter the table to only display what is on the search bar.
 	}
 
-	private static void showInsertDialog() {
-		String selectedTable = (String) tableSelector.getSelectedItem();
-		ArrayList<String> columnList = new ArrayList<String>();
 
-		try {
-			// Get all table columns and add them to an arraylist.
-			ResultSet columnsRS = DatabaseHandler.getConnection().getMetaData().getColumns(null, null, selectedTable, null);
-			while (columnsRS.next()) {
-				String columnName = columnsRS.getString("COLUMN_NAME");
-				if (columnsRS.getString("IS_AUTOINCREMENT").equals("YES")) continue;	// Skip ID Column, or any auto assigned table column.
-				columnList.add(columnName);
-			}
-			
-			// Create an input field for each column from above.
-			String[] columns = columnList.toArray(new String[0]);
-			JTextField[] fields = new JTextField[columns.length];
-			
-			JPanel panel = new JPanel();
-			panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
-			for (int i = 0; i < columns.length; i++) {
-				fields[i] = new JTextField(20);
-				panel.add(new JLabel(columns[i] + ":"));
-				panel.add(fields[i]);
-			}
-
-			int result = JOptionPane.showConfirmDialog(null, panel, "Add entry:", JOptionPane.OK_CANCEL_OPTION);
-			
-			if (result == JOptionPane.OK_OPTION) {
-				// Construct the query and execute it.
-				String query = "INSERT INTO " + selectedTable + "(";
-
-				for (int i = 0; i < columns.length; i++) {
-					query += columns[i];
-					if ((i + 1) != columns.length) query += ", "; 
-				}
-				query += ") VALUES \n(\n\t\"";
-				for (int i = 0; i < fields.length; i++) {
-					query += fields[i].getText().trim();
-					if ((i + 1) != fields.length) query += "\",\n\t\""; 
-				}
-				query += "\"\n);";
-				System.out.println(query);
-				DatabaseHandler.executeUpdateQuery(query);
-			}
-		} catch (SQLException e) {
-			e.printStackTrace();
-			JOptionPane.showMessageDialog(null, e.getMessage() + "\nError Code: " + e.getErrorCode(),
-					"Error",  JOptionPane.ERROR_MESSAGE);
-
-			// Failure to insert a new entry yields: Exit Code 1005.
-			System.exit(1005);
-		}
-	}
-
+	/**
+	 * Sends a GET request to the database, and displays the data in a tabular form.
+	 */
 	private static void loadTableData() {
 		// Get the selected table from the drop-down menu.
 		String selectedTable = (String) tableSelector.getSelectedItem();
@@ -296,6 +256,68 @@ public class GUIFrame {
 	}
 
 
+	/**
+	 * Provides a form containing field for all the table's columns, Then constructs a query and sends it to the server.
+	 * And finally, update the GUI table.
+	 */
+	private static void showInsertDialog() {
+		String selectedTable = (String) tableSelector.getSelectedItem();
+		ArrayList<String> columnList = new ArrayList<String>();
+
+		try {
+			// Get all table columns and add them to an arraylist.
+			ResultSet columnsRS = DatabaseHandler.getConnection().getMetaData().getColumns(null, null, selectedTable, null);
+			while (columnsRS.next()) {
+				String columnName = columnsRS.getString("COLUMN_NAME");
+				if (columnsRS.getString("IS_AUTOINCREMENT").equals("YES")) continue;	// Skip ID Column, or any auto assigned table column.
+				columnList.add(columnName);
+			}
+
+			// Create an input field for each column from above.
+			String[] columns = columnList.toArray(new String[0]);
+			JTextField[] fields = new JTextField[columns.length];
+
+			JPanel panel = new JPanel();
+			panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
+			for (int i = 0; i < columns.length; i++) {
+				fields[i] = new JTextField(20);
+				panel.add(new JLabel(columns[i] + ":"));
+				panel.add(fields[i]);
+			}
+
+			int result = JOptionPane.showConfirmDialog(null, panel, "Add entry:", JOptionPane.OK_CANCEL_OPTION);
+
+			if (result == JOptionPane.OK_OPTION) {
+				// Construct the query and execute it.
+				String query = "INSERT INTO " + selectedTable + "(";
+
+				for (int i = 0; i < columns.length; i++) {
+					query += columns[i];
+					if ((i + 1) != columns.length) query += ", "; 
+				}
+				query += ") VALUES \n(\n\t\"";
+				for (int i = 0; i < fields.length; i++) {
+					query += fields[i].getText().trim();
+					if ((i + 1) != fields.length) query += "\",\n\t\""; 
+				}
+				query += "\"\n);";
+				System.out.println(query);
+				DatabaseHandler.executeUpdateQuery(query);
+			}
+		} catch (SQLException e) {
+			e.printStackTrace();
+			JOptionPane.showMessageDialog(null, e.getMessage() + "\nError Code: " + e.getErrorCode(),
+					"Error",  JOptionPane.ERROR_MESSAGE);
+
+			// Failure to insert a new entry yields: Exit Code 1005.
+			System.exit(1005);
+		}
+	}
+
+
+	/**
+	 * Deletes the selected row from the database, then updates the GUI table.
+	 */
 	private static void deleteSelectedRow() {
 		// Retrieve the current table.
 		String selectedTable = (String) tableSelector.getSelectedItem();
@@ -325,8 +347,6 @@ public class GUIFrame {
 			// Failure to delete an entry yields Exit Code 1006
 			System.exit(1006);
 		}
-
-
 
 	}
 
