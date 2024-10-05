@@ -31,7 +31,7 @@ import javax.swing.event.DocumentListener;
 import javax.swing.table.DefaultTableModel;
 import javax.swing.table.TableRowSorter;
 
-/*
+/**
  * A GUI frame that connects that connects to the database and displays the data.
  */
 public class GUIFrame {
